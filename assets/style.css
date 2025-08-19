@@ -145,6 +145,13 @@ footer a:hover{
 }
 .product-card{display:flex;flex-direction:column;gap:10px;}
 .product-card img{width:100%;border-radius:12px;}
+.product-card img{
+  /* Limit product card thumbnails to a fixed height so they don't appear overly large
+   * on the category pages. Keeping object-fit set to contain preserves aspect ratio
+   * while ensuring the images fit comfortably inside their card. */
+  height:200px;
+  object-fit:contain;
+}
 .product-card h3{font-size:18px;}
 .product-card p{font-size:14px;color:var(--muted);}
 .product-card .price{font-size:16px;font-weight:700;color:var(--accent1);}  
