@@ -68,9 +68,14 @@
         basePath = '/' + parts[1];
       }
     }
-    // Inject header and footer fragments relative to the computed base path.
-    loadFragment(`${basePath}/header.html`, 'header');
-    loadFragment(`${basePath}/footer.html`, 'footer');
+    // Inject header and footer fragments. When hosted on GitHub Pages the
+    // repository name is used as a base prefix (/kinkypuzzles-site). Hard-code
+    // this prefix so that fragments resolve correctly on both GitHub Pages and
+    // custom domains. Without this adjustment the loader would attempt to
+    // fetch /header.html at the domain root and return 404.
+    const prefix = '/kinkypuzzles-site';
+    loadFragment(`${prefix}/header.html`, 'header');
+    loadFragment(`${prefix}/footer.html`, 'footer');
     // Update cart count once fragments are loaded
     updateCartBadge();
     // After the header and footer are injected, adjust any links that
