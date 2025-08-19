@@ -1,4 +1,5 @@
 // Common utilities for KinkyPuzzles static site
+
 // This script dynamically loads the header and footer into each page and
 // updates the cart count based on items stored in localStorage. By keeping
 // navigation and footer markup in separate files, we can update them in
@@ -114,8 +115,107 @@
     };
     // Defer fixing links slightly to allow header/footer injection to complete.
     setTimeout(fixLinks, 250);
+
+    // Initialize cookie consent banner after page load. This will inject
+    // a simple notification at the bottom of the viewport if the user
+    // has not yet consented to our cookie policy. The banner is
+    // intentionally lightweight and does not store any tracking cookies
+    // until consent is granted. Once the user clicks the "Accept"
+    // button, a flag is stored in localStorage and the banner will not
+    // reappear on subsequent visits. The policy page is linked for
+    // additional information.
+    initCookieConsent();
+
+    // Adjust prices across product listings and detail pages to display
+    // a crossed-out MSRP alongside the current price. This helper
+    // calculates a simple MSRP by applying a 20% increase to the
+    // listed price and formats both values accordingly. It only
+    // processes price elements once by tracking a data attribute and
+    // gracefully skips values that cannot be parsed.
+    adjustPrices();
   });
 
   // Update cart count whenever storage changes (e.g. from another tab)
   window.addEventListener('storage', updateCartBadge);
+
+  /**
+   * Displays a cookie consent banner if the user has not previously
+   * dismissed it. The banner informs visitors that the site uses
+   * cookies for essential functionality and analytics, and provides
+   * an "Accept" button to indicate consent. A link to the full
+   * cookie policy is also included. Consent is stored in
+   * localStorage under the key "cookieConsent".
+   */
+  function initCookieConsent() {
+    try {
+      // Only proceed if window and document are defined
+      if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return;
+      }
+      // Check if the user has already consented
+      const consent = localStorage.getItem('cookieConsent');
+      if (consent === 'true') {
+        return;
+      }
+      // Create banner container
+      const banner = document.createElement('div');
+      banner.id = 'cookie-consent-banner';
+      banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#16161c;color:#fff;padding:15px;z-index:9999;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;font-size:14px;box-shadow:0 -2px 5px rgba(0,0,0,0.5)';
+      // Message text
+      const msg = document.createElement('span');
+      msg.style.flex = '1 1 auto';
+      msg.style.marginRight = '12px';
+      msg.innerHTML = 'We use cookies for essential site functions and analytics. By continuing to use our site, you agree to our <a href="/kinkypuzzles-site/legal/cookies.html" style="color:#7c4dff;text-decoration:underline">cookie policy</a>.';
+      banner.appendChild(msg);
+      // Accept button
+      const btn = document.createElement('button');
+      btn.textContent = 'Accept';
+      btn.style.cssText = 'background:linear-gradient(90deg,#e753a0,#7c4dff);border:none;color:#fff;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:600;';
+      btn.onclick = function () {
+        try {
+          localStorage.setItem('cookieConsent', 'true');
+        } catch (e) {
+          // Fallback: store a cookie if localStorage fails
+          document.cookie = 'cookieConsent=true;path=/;max-age=' + 60 * 60 * 24 * 365;
+        }
+        banner.remove();
+      };
+      banner.appendChild(btn);
+      // Insert the banner into the body
+      document.body.appendChild(banner);
+    } catch (err) {
+      // Failing quietly is preferable to blocking page load
+      console.warn('Cookie consent banner failed to initialize', err);
+    }
+  }
+
+  /**
+   * Adjusts displayed prices by adding an MSRP based on a fixed markup.
+   * For each element with the class `price` this function parses the
+   * numeric value, computes a 20% higher MSRP, and replaces the text
+   * with a crossed-out MSRP and the original price. The function
+   * ensures it runs only once per element by setting a data attribute
+   * (`data-modified`). It gracefully skips elements where the price
+   * cannot be parsed.
+   */
+  function adjustPrices() {
+    try {
+      const elements = document.querySelectorAll('.price');
+      elements.forEach(el => {
+        // Skip if already modified
+        if (el.dataset.modified === '1') return;
+        const text = el.textContent || '';
+        const num = parseFloat(text.replace(/[^0-9.]/g, ''));
+        if (isNaN(num)) return;
+        // Compute MSRP as 20% above current price
+        const msrp = (num * 1.2).toFixed(2);
+        const current = num.toFixed(2);
+        el.innerHTML = '<span class="old-price" style="text-decoration:line-through;color:#888;margin-right:6px;">$' + msrp + '</span>' +
+                       '<span class="new-price">$' + current + '</span>';
+        el.dataset.modified = '1';
+      });
+    } catch (err) {
+      console.warn('Failed to adjust prices', err);
+    }
+  }
 })();
