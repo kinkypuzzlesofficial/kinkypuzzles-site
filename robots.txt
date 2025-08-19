@@ -1,7 +1,0 @@
-User-agent: *
-Disallow: /cart
-Disallow: /account
-Disallow: /checkout
-Allow: /blog/
-Allow: /shop/
-Sitemap: https://kinkypuzzlesofficial.github.io/kinkypuzzles-site/sitemap.xml
