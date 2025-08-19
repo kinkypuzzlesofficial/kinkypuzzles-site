@@ -51,11 +51,64 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    // Inject header and footer fragments
-    loadFragment('/header.html', 'header');
-    loadFragment('/footer.html', 'footer');
+    // Determine a base path for GitHub Pages deployments. When a site is
+    // hosted on <username>.github.io/repository, the root of the site
+    // includes the repository name as the first segment of the pathname.
+    // Without adjusting for this prefix, absolute URLs beginning with
+    // "/" will point to <username>.github.io/header.html instead of
+    // <username>.github.io/<repository>/header.html and therefore 404.
+    const isGitHubPages = /github\.io$/.test(window.location.hostname);
+    let basePath = '';
+    if (isGitHubPages) {
+      // location.pathname starts with "/<repo>/..." when served via Pages.
+      const parts = window.location.pathname.split('/');
+      // parts[0] is "" because pathname begins with "/".
+      // parts[1] should be the repository name if it exists.
+      if (parts.length > 1 && parts[1]) {
+        basePath = '/' + parts[1];
+      }
+    }
+    // Inject header and footer fragments relative to the computed base path.
+    loadFragment(`${basePath}/header.html`, 'header');
+    loadFragment(`${basePath}/footer.html`, 'footer');
     // Update cart count once fragments are loaded
     updateCartBadge();
+    // After the header and footer are injected, adjust any links that
+    // erroneously point to the root of the domain rather than the base path.
+    // This ensures navigation works correctly when hosted on GitHub Pages.
+    const fixLinks = () => {
+      if (!basePath) return;
+      // Fix anchor links
+      document.querySelectorAll('a[href^="/"]').forEach(el => {
+        const href = el.getAttribute('href');
+        if (href && !href.startsWith(basePath + '/')) {
+          el.setAttribute('href', basePath + href);
+        }
+      });
+      // Fix link tags referencing CSS
+      document.querySelectorAll('link[href^="/"]').forEach(el => {
+        const href = el.getAttribute('href');
+        if (href && !href.startsWith(basePath + '/')) {
+          el.setAttribute('href', basePath + href);
+        }
+      });
+      // Fix script tags referencing JS
+      document.querySelectorAll('script[src^="/"]').forEach(el => {
+        const src = el.getAttribute('src');
+        if (src && !src.startsWith(basePath + '/')) {
+          el.setAttribute('src', basePath + src);
+        }
+      });
+      // Fix image sources
+      document.querySelectorAll('img[src^="/"]').forEach(el => {
+        const src = el.getAttribute('src');
+        if (src && !src.startsWith(basePath + '/')) {
+          el.setAttribute('src', basePath + src);
+        }
+      });
+    };
+    // Defer fixing links slightly to allow header/footer injection to complete.
+    setTimeout(fixLinks, 250);
   });
 
   // Update cart count whenever storage changes (e.g. from another tab)
